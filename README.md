@@ -1,61 +1,130 @@
-# template-for-proposals
+# Multiple catch clauses
 
-A repository template for ECMAScript proposals.
+## Status
 
-## Before creating a proposal
+Champion(s): n/a
 
-Please ensure the following:
-  1. You have read the [process document](https://tc39.github.io/process-document/)
-  1. You have reviewed the [existing proposals](https://github.com/tc39/proposals/)
-  1. You are aware that your proposal requires being a member of TC39, or locating a TC39 delegate to "champion" your proposal
+Author(s): Jesper Engberg
 
-## Create your proposal repo
+Stage: -1
 
-Follow these steps:
-  1. Click the green ["use this template"](https://github.com/tc39/template-for-proposals/generate) button in the repo header. (Note: Do not fork this repo in GitHub's web interface, as that will later prevent transfer into the TC39 organization)
-  1. Update the biblio to the latest version: `npm install --save-dev --save-exact @tc39/ecma262-biblio@latest`.
-  1. Go to your repo settings “Options” page, under “GitHub Pages”, and set the source to the **main branch** under the root (and click Save, if it does not autosave this setting)
-      1. check "Enforce HTTPS"
-      1. On "Options", under "Features", Ensure "Issues" is checked, and disable "Wiki", and "Projects" (unless you intend to use Projects)
-      1. Under "Merge button", check "automatically delete head branches"
-<!--
-  1. Avoid merge conflicts with build process output files by running:
-      ```sh
-      git config --local --add merge.output.driver true
-      git config --local --add merge.output.driver true
-      ```
-  1. Add a post-rewrite git hook to auto-rebuild the output on every commit:
-      ```sh
-      cp hooks/post-rewrite .git/hooks/post-rewrite
-      chmod +x .git/hooks/post-rewrite
-      ```
--->
-  3. ["How to write a good explainer"][explainer] explains how to make a good first impression.
+## Motivation
 
-      > Each TC39 proposal should have a `README.md` file which explains the purpose
-      > of the proposal and its shape at a high level.
-      >
-      > ...
-      >
-      > The rest of this page can be used as a template ...
+The aim of the proposed syntax is primarily better readability of (especially large) catch-blocks. It is not uncommon to find code such as the following generalized example:
 
-      Your explainer can point readers to the `index.html` generated from `spec.emu`
-      via markdown like
+```js
+try {
+  someFunction();
+} catch (err) {
+  if(err instanceof ErrorA) {
+    // Do something
+  } else if (err instanceof ErrorB) {
+    // Do another thing
+  } else {
+    // Do a third thing
+  }
+}
+```
 
-      ```markdown
-      You can browse the [ecmarkup output](https://ACCOUNT.github.io/PROJECT/)
-      or browse the [source](https://github.com/ACCOUNT/PROJECT/blob/HEAD/spec.emu).
-      ```
+There are numerous issues with the current limitation of only a single catch-clause:
 
-      where *ACCOUNT* and *PROJECT* are the first two path elements in your project's Github URL.
-      For example, for github.com/**tc39**/**template-for-proposals**, *ACCOUNT* is "tc39"
-      and *PROJECT* is "template-for-proposals".
+- It forces developers to often fill the catch-block with several different functions. Not only does this not work well with the [SRP](https://en.wikipedia.org/wiki/Single-responsibility_principle), but it needlessly increases complexity by adding additional layer of indentation.
 
+- It is prone to errors: accidentally omitting an `else` statement can lead to unexpected behaviour and novice developers might attempt a `return` statement to exit the catch-block from within an if-block. This is obviously not what happens.
 
-## Maintain your proposal repo
+- Numerous other programming languages support and benefit from multiple catch blocks.
 
-  1. Make your changes to `spec.emu` (ecmarkup uses HTML syntax, but is not HTML, so I strongly suggest not naming it ".html")
-  1. Any commit that makes meaningful changes to the spec, should run `npm run build` and commit the resulting output.
-  1. Whenever you update `ecmarkup`, run `npm run build` and commit any changes that come from that dependency.
+- (Possibly runtime-implementation performance optimizations)
 
-  [explainer]: https://github.com/tc39/how-we-work/blob/HEAD/explainer.md
+## Use cases
+
+```js
+try {
+  JSON.parse(fs.readFileSync(file, "utf-8"));
+} catch SyntaxError {
+  // Corrupt save file; do nothing
+}
+```
+
+is significantly less complex than
+
+```js
+try {
+  JSON.parse(fs.readFileSync(file, "utf-8"));
+} catch (err) {
+  if (err instanceof SyntaxError) {
+    // Corrupt save file; do nothing
+  } else {
+    throw err;
+  }
+}
+```
+
+Extended catch clauses (see above example) will be referred to as "annotated". Suggestions for a better name are welcome.
+
+## The Actual Proposal
+
+This document proposes new syntax that extends the current specification of the catch-clause. The following example demonstrates how the proposed changes would behave:
+
+```js
+try {
+  someFunction();
+} catch ErrorA (err) {
+  // Do something
+} catch ErrorB | ErrorC (err) {
+  // Do another thing
+} catch {
+  // Do a third thing
+} finally {
+  // Clean up
+}
+```
+
+would be functionally equivalent to
+
+```js
+try {
+  someFunction();
+} catch (err) {
+  if(err instanceof ErrorA) {
+    // Do something
+  } else if (err instanceof ErrorB || err instanceof ErrorC) {
+    // Do another thing
+  } else {
+    // Do a third thing
+  }
+} finally {
+  // Clean up
+}
+```
+
+An error would figuratively flow through all catch-clauses until one is found that either has at least one annotation that is a superclass of the error (such that `error instanceof Annotation === true`), or no annotations at all. Unlike with case-clauses, errors do not propagate from one catch-clause to the next.
+
+This also implies the following:
+```js
+try {
+  someFunction();
+} catch (err) {
+
+} catch SyntaxError {
+  // This block will never execute
+}
+```
+
+This means, by extent, that this change is fully backwards-compatible.
+
+Note that if multiple catch-clauses without arguments are present, only the first will ever possibly execute.
+
+\
+If the error "flows" though all catch-clauses (no catch-all-clause without annotations is present), the error will be re-thrown: See [use cases](#use-cases)
+
+## Open Questions / Thoughts
+
+- Should the [same set of expressions that are valid for case-clauses](https://tc39.es/ecma262/#_ref_19602) be allowed for annotations on catch-clauses? If so, a different delimiter would need to be chosen as `|` could also mean a bitwise or expression.
+
+- Should more than one unannotated catch-clause raise a SyntaxError? Other than, for example two `default:` clauses in a switch-block, the execution path would remain unambiguous and following catch-clauses would merely be unreachable. This would make more sense as an ESLint rule than to forbid by specification.
+
+---
+
+You can browse the [ecmarkup output](https://jeengbe.github.io/proposal-multi-catch/)
+or browse the [source](https://github.com/jeengbe/proposal-multi-catch/blob/HEAD/spec.emu).
