@@ -122,7 +122,7 @@ If the error "flows" though all catch-clauses (no catch-all-clause without annot
 
 - Should the [same set of expressions that are valid for case-clauses](https://tc39.es/ecma262/#_ref_19602) be allowed for annotations on catch-clauses? If so, a different delimiter would need to be chosen as `|` could also mean a bitwise or expression.
 
-- Should more than one unannotated catch-clause raise a SyntaxError? Other than, for example two `default:` clauses in a switch-block, the execution path would remain unambiguous and following catch-clauses would merely be unreachable. This would make more sense as an ESLint rule than to forbid by specification.
+- Should more than one unannotated catch-clause raise a `SyntaxError`? Unlike with, for example, two `default:` clauses in a switch-block, the execution path would remain unambiguous and following catch-clauses would merely be unreachable. This would make more sense as an ESLint rule than to forbid by specification.
 
 ---
 
