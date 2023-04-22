@@ -136,14 +136,14 @@ If the error "flows" though all catch-clauses (no catch-all-clause without guard
 - https://github.com/mpcsh/proposal-catch-guards / https://github.com/wmsbill/proposal-catch-guards/pull/5/files
 
   > Consider the following code snippet:
-
-  ```ts
-  try {
-    apiRequest();
-  } catch match (${InternalServerError}) {
-    log({ level: 'ERROR', payload: ... });
-  }
-  ```
+  >
+  > ```ts
+  > try {
+  >   apiRequest();
+  > } catch match (${InternalServerError}) {
+  >   log({ level: 'ERROR', payload: ... });
+  > }
+  > ```
 
   I don't understand this proposal - where is the variable with which I access the error within the catch-body?
 
