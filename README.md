@@ -104,7 +104,7 @@ This also implies the following:
 ```js
 try {
   someFunction();
-} catch (err) {
+} catch {
 
 } catch SyntaxError {
   // This block will never execute
