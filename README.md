@@ -123,6 +123,35 @@ If the error "flows" though all catch-clauses (no catch-all-clause without guard
 
 - Should more than one unguarded catch-clause raise a `SyntaxError`? Unlike with, for example, two `default:` clauses in a switch-block, the execution path would remain unambiguous and following catch-clauses would merely be unreachable. This would make more sense as an ESLint rule than to forbid by specification.
 
+## Comparison with other proposals
+
+- https://github.com/michaelficarra/proposal-catch-guards:
+
+  Option 1: `as` is a well-established keyword in TypeScript and makes no sense in the context used here.
+
+  Option 2, 3: Feels inconsistent with other ECMAScript and doesn't read smoothly in a way I cannot put in words.
+
+  Option 4: As already stated, conflicts with type systems. (Confusing behaviour with `catch (err: any/unknown)`, which would then refer to the _type_ `any`/`unknown` instead of the class)
+
+- https://github.com/mpcsh/proposal-catch-guards / https://github.com/wmsbill/proposal-catch-guards/pull/5/files
+
+  > Consider the following code snippet:
+
+  ```ts
+  try {
+    apiRequest();
+  } catch match (${InternalServerError}) {
+    log({ level: 'ERROR', payload: ... });
+  }
+  ```
+
+  I don't understand this proposal - where is the variable with which I access the error within the catch-body?
+
+- https://github.com/wmsbill/proposal-catch-guards/pull/8/files
+
+  Doesn't look right. A `,` stands for some sort of list, which this is certainly not. `ErrorType` is nothing like `err`.
+
+
 ---
 
 You can browse the [ecmarkup output](https://jeengbe.github.io/proposal-multi-catch/)
